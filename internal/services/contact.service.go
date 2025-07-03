@@ -149,3 +149,15 @@ func (cs *ContactService) UpdateContact(id int, nom, telephone, email string) er
 
 	return cs.SaveContacts()
 }
+
+func (cs *ContactService) DeleteContact(id int) error {
+	_, index := cs.GetContactByID(id)
+
+	if index == -1 {
+		return fmt.Errorf("aucun contact trouvé avec l'ID %d", id)
+	}
+
+	cs.contacts = append(cs.contacts[:index], cs.contacts[index+1:]...)
+
+	return cs.SaveContacts()
+}
