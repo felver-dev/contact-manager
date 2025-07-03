@@ -8,7 +8,7 @@ import (
 
 type Contact struct {
 	ID        int       `json:"id"`
-	Nom       string    `json:"Nom"`
+	Nom       string    `json:"nom"`
 	Telephone string    `json:"telephone"`
 	Email     string    `json:"email"`
 	Cree      time.Time `json:"cree"`
@@ -16,7 +16,8 @@ type Contact struct {
 }
 
 func (c Contact) String() string {
-	return fmt.Sprintf("ID: %d | %s | %s | %s", c.ID, c.Nom, c.Telephone, c.Email)
+	return fmt.Sprintf("ID: %d | %s | %s | %s",
+		c.ID, c.Nom, c.Telephone, c.Email)
 }
 
 func (c Contact) AfficherDetails() {

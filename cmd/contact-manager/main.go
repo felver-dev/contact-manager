@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 
 	"github.com/felver-dev/contact-manager/internal/cli"
@@ -10,15 +9,16 @@ import (
 )
 
 func main() {
+	// Initialiser le stockage
+	storage := storage.NewJSONStorage("contacts.json")
 
-	storage := storage.JSONStorage("contacts.json")
+	// Initialiser le service
+	contactService := services.NouveauGestionnaireContacts(storage)
 
-	contactService := services.NewContactService(storage)
-
+	// Initialiser l'interface CLI
 	cliApp := cli.NewCLI(contactService)
 
-	fmt.Println("Bienvenu dans les gestionnaire de contacts!")
-
+	// Lancer l'application
 	if err := cliApp.Run(); err != nil {
 		log.Fatal(err)
 	}

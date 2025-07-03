@@ -10,67 +10,45 @@ import (
 	"github.com/felver-dev/contact-manager/internal/validators"
 )
 
-type ContactService struct {
+type GestionnaireContacts struct {
 	contacts   []models.Contact
 	prochainID int
 	stockage   storage.Storage
 }
 
-func NewContactService(storage storage.Storage) *ContactService {
-	cs := &ContactService{
+func NouveauGestionnaireContacts(stockage storage.Storage) *GestionnaireContacts {
+	gc := &GestionnaireContacts{
 		contacts:   make([]models.Contact, 0),
 		prochainID: 1,
-		storage:    storage,
+		stockage:   stockage,
 	}
 
-	if err := cs.LoadContacts(); err != nil {
-		fmt.Printf("Erreur lors du chargement : %v\n", err)
-	}
-
-	return cs
+	gc.ChargerContacts()
+	return gc
 }
 
-func (cs *ContactService) LoadContacts() error {
-	contacts, err := cs.storage.Load()
-
-	if err != nil {
-		return err
-	}
-
-	cs.contacts = contacts
-
-	for _, contact := range cs.contacts {
-		if contact.ID >= cs.prochainID {
-			cs.prochainID = contact.ID + 1
-		}
-	}
-
-	return nil
-}
-
-func (cs *ContactService) SaveContacts() error {
-
-	return cs.storage.Save(cs.contacts)
-}
-
-func (cs *ContactService) AddContact(nom, telephone, email string) error {
+// AjouterContact ajoute un nouveau contact
+func (gc *GestionnaireContacts) AjouterContact(nom, telephone, email string) error {
+	// Validation
 	if !validators.ValiderTelephone(telephone) {
-		return fmt.Errorf("format de téléphone invalid")
+		return fmt.Errorf("format de téléphone invalide")
 	}
 
 	if !validators.ValiderEmail(email) {
-		return fmt.Errorf("format d'email invalid")
+		return fmt.Errorf("format d'email invalide")
 	}
 
-	for _, contact := range cs.contacts {
+	// Vérifier si le contact existe déjà
+	for _, contact := range gc.contacts {
 		if strings.EqualFold(contact.Email, email) {
 			return fmt.Errorf("un contact avec cet email existe déjà (ID: %d)", contact.ID)
 		}
 	}
 
+	// Créer le nouveau contact
 	maintenant := time.Now()
 	nouveauContact := models.Contact{
-		ID:        cs.prochainID,
+		ID:        gc.prochainID,
 		Nom:       nom,
 		Telephone: telephone,
 		Email:     email,
@@ -78,122 +56,121 @@ func (cs *ContactService) AddContact(nom, telephone, email string) error {
 		Modifie:   maintenant,
 	}
 
-	cs.contacts = append(cs.contacts, nouveauContact)
-	cs.prochainID++
+	gc.contacts = append(gc.contacts, nouveauContact)
+	gc.prochainID++
 
-	return cs.SaveContacts()
+	return gc.stockage.Sauvegarder(gc.contacts)
 }
 
-func (cs *ContactService) GetAllContacts() []models.Contact {
-	return cs.contacts
+// ListerContacts retourne tous les contacts
+func (gc *GestionnaireContacts) ListerContacts() []models.Contact {
+	return gc.contacts
 }
 
-func (cs *ContactService) SearchContacts(terme string) []models.Contact {
-	var results []models.Contact
+// RechercherContacts recherche des contacts par terme
+func (gc *GestionnaireContacts) RechercherContacts(terme string) []models.Contact {
+	var resultats []models.Contact
 	terme = strings.ToLower(terme)
 
-	for _, contact := range cs.contacts {
+	for _, contact := range gc.contacts {
 		if strings.Contains(strings.ToLower(contact.Nom), terme) ||
 			strings.Contains(strings.ToLower(contact.Email), terme) {
-			results = append(results, contact)
+			resultats = append(resultats, contact)
 		}
 	}
 
-	return results
+	return resultats
 }
 
-func (cs *ContactService) GetContactByID(id int) (*models.Contact, int) {
-	for i, contact := range cs.contacts {
+// TrouverContactParID trouve un contact par son ID
+func (gc *GestionnaireContacts) TrouverContactParID(id int) (*models.Contact, int) {
+	for i, contact := range gc.contacts {
 		if contact.ID == id {
-			return &cs.contacts[i], i
+			return &gc.contacts[i], i
 		}
 	}
-
 	return nil, -1
 }
 
-func (cs *ContactService) UpdateContact(id int, nom, telephone, email string) error {
-	contact, index := cs.GetContactByID(id)
-
+// ModifierContact modifie un contact existant
+func (gc *GestionnaireContacts) ModifierContact(id int, nouveauNom, nouveauTelephone, nouvelEmail string) error {
+	contact, index := gc.TrouverContactParID(id)
 	if contact == nil {
 		return fmt.Errorf("aucun contact trouvé avec l'ID %d", id)
 	}
 
-	if nom != "" {
-		contact.Nom = nom
+	if nouveauNom != "" {
+		contact.Nom = nouveauNom
 	}
 
-	if telephone != "" {
-		if !validators.ValiderTelephone(telephone) {
+	if nouveauTelephone != "" {
+		if !validators.ValiderTelephone(nouveauTelephone) {
 			return fmt.Errorf("format de téléphone invalide")
 		}
-		contact.Telephone = telephone
+		contact.Telephone = nouveauTelephone
 	}
 
-	if email != "" {
-		if !validators.ValiderEmail(email) {
+	if nouvelEmail != "" {
+		if !validators.ValiderEmail(nouvelEmail) {
 			return fmt.Errorf("format d'email invalide")
 		}
 
-		for _, c := range cs.contacts {
-			if c.ID != contact.ID && strings.EqualFold(c.Email, email) {
+		for _, c := range gc.contacts {
+			if c.ID != contact.ID && strings.EqualFold(c.Email, nouvelEmail) {
 				return fmt.Errorf("cet email est déjà utilisé par le contact ID %d", c.ID)
 			}
 		}
-
-		contact.Email = email
+		contact.Email = nouvelEmail
 	}
 
 	contact.Modifie = time.Now()
-	cs.contacts[index] = *contact
+	gc.contacts[index] = *contact
 
-	return cs.SaveContacts()
+	return gc.stockage.Sauvegarder(gc.contacts)
 }
 
-func (cs *ContactService) DeleteContact(id int) error {
-	_, index := cs.GetContactByID(id)
-
+// SupprimerContact supprime un contact
+func (gc *GestionnaireContacts) SupprimerContact(id int) error {
+	_, index := gc.TrouverContactParID(id)
 	if index == -1 {
 		return fmt.Errorf("aucun contact trouvé avec l'ID %d", id)
 	}
 
-	cs.contacts = append(cs.contacts[:index], cs.contacts[index+1:]...)
-
-	return cs.SaveContacts()
+	gc.contacts = append(gc.contacts[:index], gc.contacts[index+1:]...)
+	return gc.stockage.Sauvegarder(gc.contacts)
 }
 
-func (cs *ContactService) getStatistics() map[string]interface{} {
-
+// AfficherStatistiques retourne les statistiques des contacts
+func (gc *GestionnaireContacts) AfficherStatistiques() map[string]interface{} {
 	stats := make(map[string]interface{})
 
-	total := len(cs.contacts)
+	total := len(gc.contacts)
 	stats["total"] = total
 
 	if total == 0 {
 		return stats
 	}
 
+	// Compter les domaines email
 	domaines := make(map[string]int)
-	for _, contact := range cs.contacts {
+	for _, contact := range gc.contacts {
 		parts := strings.Split(contact.Email, "@")
-
 		if len(parts) == 2 {
 			domaine := strings.ToLower(parts[1])
 			domaines[domaine]++
 		}
 	}
-
 	stats["domaines"] = domaines
 
-	plusRecent := cs.contacts[0]
-	plusAncien := cs.contacts[0]
+	// Contact le plus récent et le plus ancien
+	plusRecent := gc.contacts[0]
+	plusAncien := gc.contacts[0]
 
-	for _, contact := range cs.contacts {
-
+	for _, contact := range gc.contacts {
 		if contact.Cree.After(plusRecent.Cree) {
 			plusRecent = contact
 		}
-		if contact.Cree.Before(plusRecent.Cree) {
+		if contact.Cree.Before(plusAncien.Cree) {
 			plusAncien = contact
 		}
 	}
@@ -202,4 +179,22 @@ func (cs *ContactService) getStatistics() map[string]interface{} {
 	stats["plus_ancien"] = plusAncien
 
 	return stats
+}
+
+// ChargerContacts charge les contacts depuis le stockage
+func (gc *GestionnaireContacts) ChargerContacts() error {
+	contacts, err := gc.stockage.Charger()
+	if err != nil {
+		return err
+	}
+
+	gc.contacts = contacts
+
+	for _, contact := range gc.contacts {
+		if contact.ID >= gc.prochainID {
+			gc.prochainID = contact.ID + 1
+		}
+	}
+
+	return nil
 }
