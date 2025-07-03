@@ -44,3 +44,8 @@ func (cs *ContactService) LoadContacts() error {
 
 	return nil
 }
+
+func (cs ContactService) SaveContacts() error {
+
+	return cs.storage.Save(cs.contacts)
+}
