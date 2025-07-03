@@ -36,3 +36,22 @@ func (js *JSONStorage) Save(conctacts models.Contact) error {
 
 	return nil
 }
+
+func (js *JSONStorage) Load() ([]models.Contact, error) {
+	if _, err := os.Stat(js.filename); os.IsNotExist(err) {
+		return []models.Contact{}, nil
+	}
+
+	data, err := os.ReadFile(js.filename)
+	if err != nil {
+		return nil, fmt.Errorf("erreur lors de lecture du fichier : %v", err)
+	}
+
+	var contacts []models.Contact
+	err = json.Unmarshal(data, &contacts)
+	if err != nil {
+		return nil, fmt.Errorf("erreur lors de désérisalisation : %v", err)
+	}
+
+	return contacts, nil
+}
