@@ -13,7 +13,7 @@ import (
 type ContactService struct {
 	contacts   []models.Contact
 	prochainID int
-	storage    storage.Storage
+	stockage   storage.Storage
 }
 
 func NewContactService(storage storage.Storage) *ContactService {

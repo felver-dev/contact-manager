@@ -44,7 +44,7 @@ func (js *JSONStorage) Load() ([]models.Contact, error) {
 
 	data, err := os.ReadFile(js.filename)
 	if err != nil {
-		return nil, fmt.Errorf("erreur lors de lecture du fichier : %v", err)
+		fmt.Errorf("erreur lors de lecture du fichier : %v", err)
 	}
 
 	var contacts []models.Contact
