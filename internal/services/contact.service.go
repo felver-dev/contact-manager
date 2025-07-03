@@ -161,3 +161,45 @@ func (cs *ContactService) DeleteContact(id int) error {
 
 	return cs.SaveContacts()
 }
+
+func (cs *ContactService) getStatistics() map[string]interface{} {
+
+	stats := make(map[string]interface{})
+
+	total := len(cs.contacts)
+	stats["total"] = total
+
+	if total == 0 {
+		return stats
+	}
+
+	domaines := make(map[string]int)
+	for _, contact := range cs.contacts {
+		parts := strings.Split(contact.Email, "@")
+
+		if len(parts) == 2 {
+			domaine := strings.ToLower(parts[1])
+			domaines[domaine]++
+		}
+	}
+
+	stats["domaines"] = domaines
+
+	plusRecent := cs.contacts[0]
+	plusAncien := cs.contacts[0]
+
+	for _, contact := range cs.contacts {
+
+		if contact.Cree.After(plusRecent.Cree) {
+			plusRecent = contact
+		}
+		if contact.Cree.Before(plusRecent.Cree) {
+			plusAncien = contact
+		}
+	}
+
+	stats["plus_recent"] = plusRecent
+	stats["plus_ancien"] = plusAncien
+
+	return stats
+}
