@@ -83,3 +83,7 @@ func (cs *ContactService) AddContact(nom, telephone, email string) error {
 
 	return cs.SaveContacts()
 }
+
+func (cs *ContactService) GetAllContacts() []models.Contact {
+	return cs.contacts
+}
