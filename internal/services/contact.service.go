@@ -101,3 +101,13 @@ func (cs *ContactService) SearchContacts(terme string) []models.Contact {
 
 	return results
 }
+
+func (cs *ContactService) GetContactByID(id int) (*models.Contact, int) {
+	for i, contact := range cs.contacts {
+		if contact.ID == id {
+			return &cs.contacts[i], i
+		}
+	}
+
+	return nil, -1
+}
