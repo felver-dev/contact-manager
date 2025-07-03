@@ -87,3 +87,17 @@ func (cs *ContactService) AddContact(nom, telephone, email string) error {
 func (cs *ContactService) GetAllContacts() []models.Contact {
 	return cs.contacts
 }
+
+func (cs *ContactService) SearchContacts(terme string) []models.Contact {
+	var results []models.Contact
+	terme = strings.ToLower(terme)
+
+	for _, contact := range cs.contacts {
+		if strings.Contains(strings.ToLower(contact.Nom), terme) ||
+			strings.Contains(strings.ToLower(contact.Email), terme) {
+			results = append(results, contact)
+		}
+	}
+
+	return results
+}
