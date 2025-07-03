@@ -111,3 +111,41 @@ func (cs *ContactService) GetContactByID(id int) (*models.Contact, int) {
 
 	return nil, -1
 }
+
+func (cs *ContactService) UpdateContact(id int, nom, telephone, email string) error {
+	contact, index := cs.GetContactByID(id)
+
+	if contact == nil {
+		return fmt.Errorf("aucun contact trouvé avec l'ID %d", id)
+	}
+
+	if nom != "" {
+		contact.Nom = nom
+	}
+
+	if telephone != "" {
+		if !validators.ValiderTelephone(telephone) {
+			return fmt.Errorf("format de téléphone invalide")
+		}
+		contact.Telephone = telephone
+	}
+
+	if email != "" {
+		if !validators.ValiderEmail(email) {
+			return fmt.Errorf("format d'email invalide")
+		}
+
+		for _, c := range cs.contacts {
+			if c.ID != contact.ID && strings.EqualFold(c.Email, email) {
+				return fmt.Errorf("cet email est déjà utilisé par le contact ID %d", c.ID)
+			}
+		}
+
+		contact.Email = email
+	}
+
+	contact.Modifie = time.Now()
+	cs.contacts[index] = *contact
+
+	return cs.SaveContacts()
+}
