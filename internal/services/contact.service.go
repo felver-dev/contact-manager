@@ -26,3 +26,21 @@ func NewContactService(storage storage.Storage) *ContactService {
 
 	return cs
 }
+
+func (cs *ContactService) LoadContacts() error {
+	contacts, err := cs.storage.Load()
+
+	if err != nil {
+		return err
+	}
+
+	cs.contacts = contacts
+
+	for _, contact := range cs.contacts {
+		if contact.ID >= cs.prochainID {
+			cs.prochainID = contact.ID + 1
+		}
+	}
+
+	return nil
+}
